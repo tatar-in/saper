@@ -1,0 +1,11 @@
+C:\Users\User\source\repos\Saper\Saper\obj\Debug\Saper.Form1.resources
+C:\Users\User\source\repos\Saper\Saper\obj\Debug\Saper.Properties.Resources.resources
+C:\Users\User\source\repos\Saper\Saper\obj\Debug\Saper.csproj.GenerateResource.cache
+C:\Users\User\source\repos\Saper\Saper\bin\Debug\Saper.exe.config
+C:\Users\User\source\repos\Saper\Saper\bin\Debug\Saper.exe
+C:\Users\User\source\repos\Saper\Saper\bin\Debug\Saper.pdb
+C:\Users\User\source\repos\Saper\Saper\obj\Debug\Saper.csprojAssemblyReference.cache
+C:\Users\User\source\repos\Saper\Saper\obj\Debug\Saper.exe
+C:\Users\User\source\repos\Saper\Saper\obj\Debug\Saper.pdb
+C:\Users\User\source\repos\Saper\Saper\bin\Debug\Saper.exe.CodeAnalysisLog.xml
+C:\Users\User\source\repos\Saper\Saper\bin\Debug\Saper.exe.lastcodeanalysissucceeded
