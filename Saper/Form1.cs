@@ -13,540 +13,540 @@ namespace Saper
 {
     public partial class Form1 : Form
     {
+        //создаем переменные для игры
+        private int countX; //количество кнопок по оси Х
+        private int countY; //количество кнопок по оси У
+        private int countBomb; //количество бомб в игре
+        private int buttonWH = 30; //ширина и высота кнопки по осям Х и Y
+        private int menuHeight = 100; //высота блока меню с установкой параметров игры
+
+        //создаем массив значений кнопок (логика игры)
+        //"" - граница игрового поля (чтобы не писать условия на проверку границ массива)
+        //"0" - кнопка пустая 
+        //"1"..."8" - вокруг кнопки указанное количество бомб 
+        //"bomb" - кнопка содержит бомбу
+        private string[,] buttonValue;
+
+        //создаем массив статусов кнопок
+        //0 - кнопка закрыта
+        //1 - кнопка открыта
+        //2 - поставлен флаг
+        private int[,] buttonStatus;
+        
+        //создаем поле для рисования
+        private Graphics g;
+
         public Form1()
         {
             InitializeComponent();
-        }
-
-        int buttonInWidth; //количество кнопок по Х
-        int buttonInHeigth; //количество кнопок по У
-        int bombInGame; //количество бомб в игре
-        NewButton[,] allButtons;//массив кнопок
-
-    //новый класс кнопок     
-    public class NewButton : Button
-    {
-        public string Param { get; set; }
+            //создание кнопки для закрытия игры по ESC
+            Button buttonClose = new Button();
+            buttonClose.Size = new Size(0, 0);
+            buttonClose.Click += new EventHandler(buttonClose_Click);
+            Controls.Add(buttonClose);
             
-    }
-        
-    //вид кнопок (звездочки, кружки)
-    private void CreateButtonInTable(int j, int i)
-    {
-            
-        NewButton button = new NewButton();
-        button.Location = new Point(j*30, i*30 + 100);
-        button.Size = new Size(30, 30);
-        button.BackColor = Color.White;
-        button.Name = j + "-" + i;
-        Controls.Add(button);
-        button.Click += new EventHandler(Button_Click);
-        allButtons[j, i] = button;
-
-        GraphicsPath path = new GraphicsPath();
-        //звездочка вместо кнопки
-        //path.AddPolygon(new PointF[]{
-        //            new PointF(15.4658477444273f, 2.3f),
-        //            new PointF(19.5803445104746f, 10.6368810393754f),
-        //            new PointF(28.7806389725595f, 11.9737620787507f),
-        //            new PointF(22.1232433584934f, 18.4631189606246f),
-        //            new PointF(23.6948412765219f, 27.6262379212493f),
-        //            new PointF(15.4658477444273f, 23.3f),
-        //            new PointF(7.23685421233268f, 27.6262379212493f),
-        //            new PointF(8.80845213036122f, 18.4631189606246f),
-        //            new PointF(2.15105651629515f, 11.9737620787507f),
-        //            new PointF(11.35135097838f, 10.6368810393754f)});
-
-        //кружок вместо кнопки
-        path.AddEllipse(3, 3, 22, 22);
-        Region rgn = new Region(path);
-        button.Region = rgn;
-
-    }
-
-    //вид бомбы в кнопке
-    private void SetBomb(NewButton button)
-    {
-        button.Param = "bomb";
-    }
-
-    //проверка кнопки на наличие бомбы
-    private bool IsBomb(NewButton button)
-    {
-        if(button.Param == "bomb")
-        {
-            return true;
+            //кнопки по умолчанию: ESC - выход, ENTER - старт
+            CancelButton = buttonClose;
+            AcceptButton = buttonStartGame;
         }
-        else
-        {
-            return false;
-        }
-    }
 
-    //старт игры
-    private void buttonStartGame_Click(object sender, EventArgs e)
-    {
-        if (buttonStartGame.Text == "Сброс")
+        //закрытие игры по ESC
+        private void buttonClose_Click(object sender, EventArgs e)
         {
-            buttonStartGame.Text = "Старт";
-            Application.Restart();
+            Close();
         }
-        else
+
+        //старт игры
+        private void buttonStartGame_Click(object sender, EventArgs e)
         {
-            buttonInWidth = (int)countButtonX.Value;
+            //забираем данные с формы для генерации игры (количество кнопок по Х и Y, количество бомб)
+            //деактивируем кнопки и поля
+            countX = (int)countButtonX.Value;
+            countY = (int)countButtonY.Value;
+            countBomb = (int)countMine.Value;
             countButtonX.Enabled = false;
-            buttonInHeigth = (int)countButtonY.Value;
             countButtonY.Enabled = false;
-            bombInGame = (int)countMine.Value;
             countMine.Enabled = false;
             timerOfGame.Enabled = false;
-            buttonStartGame.Text = "Сброс";
-            if (buttonInWidth * 30 + 20 > 500)
+            buttonStartGame.Enabled = false;
+
+            //проверка на превышение количества бомб над количеством кнопок
+            if (countBomb > countX * countY)
             {
-                ClientSize = new Size(buttonInWidth * 30, buttonInHeigth * 30 + 100);
-}
+                Message("mistake-limitofbomb");
+            }
+
+            //проверка на превышение ширины и высоты игрового поля 
+            //над максимально возможной шириной и высотой окна формы
+            //и генерация ширины и высоты формы в соотвествии с размерами игрового поля
+            if ((countY + 2) * buttonWH + menuHeight < SystemInformation.PrimaryMonitorMaximizedWindowSize.Height
+                && (countX + 2) * buttonWH < SystemInformation.PrimaryMonitorMaximizedWindowSize.Width)
+            {
+                //проверка превышения ширины формы, заданной по умолчанию = 500
+                if ((countX + 2) * buttonWH < 500)
+                {
+                    ClientSize = new Size(500, (countY + 2) * buttonWH + menuHeight);
+                }
+                else if ((countX + 2) * buttonWH >= 500 && (countX + 2) * buttonWH < SystemInformation.PrimaryMonitorMaximizedWindowSize.Width)
+                {
+                    ClientSize = new Size((countX + 2) * buttonWH, (countY + 2) * buttonWH + menuHeight);
+                }
+            }
             else
             {
-                ClientSize = new Size(500, buttonInHeigth * 30 + 100);
-            }
-            timer1.Start();
-            allButtons = new NewButton[buttonInWidth, buttonInHeigth];
-
-            CreateTable();
-            CreateBomb();
-            CountAroundBomb();
-        }   
-    }
-    
-    //создание поля кнопок для игры (пока долго грузится при больших количествах)
-    private void CreateTable()
-    {
-        for (int i = 0; i < buttonInHeigth; i++)
-        {
-            for (int j = 0; j < buttonInWidth; j++)
-            {
-                CreateButtonInTable(j, i);
-            }
-        }
-    }
-
-    //расстановка бомб
-    private void CreateBomb()
-    {
-        Random bombRandom = new Random();
-        if (bombInGame > buttonInWidth * buttonInHeigth)
-        {
-            Message("mistake_limitofbomb");
-        }
-        else
-        {
-            for (int i = 0; i < bombInGame; i++)
-            {
-                while (true) // чтобы рандом не попадал в ту же ячейку
+                string descr;
+                string capt = "Ошибка!";
+                MessageBoxButtons type = MessageBoxButtons.YesNo;
+                //сообщение, что игровое поле выходит за границы максимально возможной ширины и высоты окна формы
+                //ДА - установка максимального количества кнопок по оси Х и У
+                //НЕТ - перезапуск игры
+                if ((countY + 2) * buttonWH + menuHeight >= SystemInformation.PrimaryMonitorMaximizedWindowSize.Height
+                    && (countX + 2) * buttonWH >= SystemInformation.PrimaryMonitorMaximizedWindowSize.Width)
                 {
-                    int x = bombRandom.Next(buttonInWidth);
-                    int y = bombRandom.Next(buttonInHeigth);
-                    if (!IsBomb(allButtons[x, y]))
+                    descr = "Количество кнопок не может быть больше, чем размер окна!\n\n" +
+                        $"Максимальное количество кнопок по оси Х = {SystemInformation.PrimaryMonitorMaximizedWindowSize.Width / buttonWH - 2}" +
+                        $", а по оси Y = {(SystemInformation.PrimaryMonitorMaximizedWindowSize.Height - menuHeight) / buttonWH - 2}\n\n" +
+                        "Применить максимальные параметры к игре?";
+                    DialogResult result = MessageBox.Show(descr, capt, type);
+                    if (result == DialogResult.Yes)
                     {
-                        SetBomb(allButtons[x, y]);
-                        break;
+                        countX = SystemInformation.PrimaryMonitorMaximizedWindowSize.Width / buttonWH - 2;
+                        countY = (SystemInformation.PrimaryMonitorMaximizedWindowSize.Height - menuHeight) / buttonWH - 2;
+                        ClientSize = new Size((countX + 2) * buttonWH, (countY + 2) * buttonWH + menuHeight);
+                        countButtonX.Value = countX;
+                        countButtonY.Value = countY;
                     }
                     else
                     {
-                        continue;
+                        Application.Restart();
                     }
                 }
-            }
-        }
-    }
-
-    //рассчет значений ячеек (количество бомб вокруг)
-    private void CountAroundBomb()
-    {
-        for (int i = 0; i < buttonInHeigth; i++)
-        {
-            for (int j = 0; j < buttonInWidth; j++)
-            {
-                int countBomb = 0;
-                if (!IsBomb(allButtons[j, i]))
+                //игровое поле выходит за границу максимально возможной высоты окна формы
+                else if ((countY + 2) *buttonWH + menuHeight >= SystemInformation.PrimaryMonitorMaximizedWindowSize.Height)
                 {
-                    if (i > 0 && j > 0 && i < buttonInHeigth - 1 && j < buttonInWidth - 1)
+                    descr = "Количество кнопок не может быть больше, чем размер окна!\n\n" +
+                        $"Максимальное количество кнопок по оси Y = {(SystemInformation.PrimaryMonitorMaximizedWindowSize.Height - menuHeight) / buttonWH - 2}\n\n" +
+                        "Применить параметры к игре?";
+                    DialogResult result = MessageBox.Show(descr, capt, type);
+                    if (result == DialogResult.Yes)
                     {
-                        countBomb = IsBomb(allButtons[j - 1, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j - 1, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j - 1, i]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i]) ? countBomb + 1 : countBomb;
+                        countY = (SystemInformation.PrimaryMonitorMaximizedWindowSize.Height - menuHeight) / buttonWH - 2;
+                        ClientSize = new Size((countX + 2) * buttonWH, (countY + 2) * buttonWH + menuHeight);
+                        countButtonY.Value = countY;
                     }
-                    else if (i == 0 && j > 0 && j < buttonInWidth - 1)
+                    else
                     {
-                        countBomb = IsBomb(allButtons[j - 1, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j - 1, i]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i]) ? countBomb + 1 : countBomb;
+                        Application.Restart();
                     }
-                    else if (i > 0 && j == 0 && i < buttonInHeigth - 1)
+                }
+                //игровое поле выходит за границу максимально возможной ширины окна формы
+                else
+                {
+                    descr = "Количество кнопок не может быть больше, чем размер окна!\n\n" +
+                        $"Максимальное количество кнопок по оси Х = {SystemInformation.PrimaryMonitorMaximizedWindowSize.Width / buttonWH - 2}\n\n" +
+                        "Применить максимальные параметры к игре?";
+                    DialogResult result = MessageBox.Show(descr, capt, type);
+                    if (result == DialogResult.Yes)
                     {
-                        countBomb = IsBomb(allButtons[j, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i]) ? countBomb + 1 : countBomb;
+                        countX = SystemInformation.PrimaryMonitorMaximizedWindowSize.Width / buttonWH - 2;
+                        ClientSize = new Size((countX + 2) * buttonWH, (countY + 2) * buttonWH + menuHeight);
+                        countButtonX.Value = countX;
                     }
-                    else if (j > 0 && i == buttonInHeigth - 1 && j < buttonInWidth - 1)
+                    else
                     {
-                        countBomb = IsBomb(allButtons[j - 1, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j - 1, i]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i]) ? countBomb + 1 : countBomb;
+                        Application.Restart();
                     }
-                    else if (i > 0 && i < buttonInHeigth - 1 && j == buttonInWidth - 1)
-                    {
-                        countBomb = IsBomb(allButtons[j - 1, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j - 1, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j - 1, i]) ? countBomb + 1 : countBomb;
-                    }
-                    else if (i == 0 && j == 0)
-                    {
-                        countBomb = IsBomb(allButtons[j, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i]) ? countBomb + 1 : countBomb;
-                    }
-                    else if (i == 0 && j == buttonInWidth - 1)
-                    {
-                        countBomb = IsBomb(allButtons[j - 1, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j, i + 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j - 1, i]) ? countBomb + 1 : countBomb;
-                    }
-                    else if (i == buttonInHeigth - 1 && j == buttonInWidth - 1)
-                    {
-                        countBomb = IsBomb(allButtons[j - 1, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j - 1, i]) ? countBomb + 1 : countBomb;
-                    }
-                    else if (j == 0 && i == buttonInHeigth - 1)
-                    {
-                        countBomb = IsBomb(allButtons[j, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i - 1]) ? countBomb + 1 : countBomb;
-                        countBomb = IsBomb(allButtons[j + 1, i]) ? countBomb + 1 : countBomb;
-                    }
-                    allButtons[j, i].Param = countBomb.ToString();
                 }
             }
-
+            //генерируем и запускаем игру
+            Location = new Point(0, 0);
+            g = CreateGraphics();
+            buttonValue = new string[countX + 2, countY + 2];
+            buttonStatus = new int[countX + 2, countY + 2];
+            CreateBomb();
+            CountAroundBomb();
+            CreateTable();
+            timer1.Start();
         }
-    }
         
-    //клик на кнопку
-    private void Button_Click(object sender, EventArgs e)
-    {
-        NewButton button = (NewButton)sender;
-        OpenButton(button);
-        if (IsBomb(button))
+        //вид кнопки
+        private void CreateButton(int x, int y)
         {
-            OpenTableButton();
-            Message("lose_on_bomb");
-
-        }
-        else if (button.Param == "0")
-        {
-            OpenButton(button);
-            GetNullArea(button);
-        }
-        else if (WinInGame())
-        {
-            Message("win");
-        }
-    }
-
-    //открывает кнопку и подкрашивает в соответствующий цвет
-    private void OpenButton(NewButton button)
-    {
-        if (IsBomb(button))
-        {
-
-            ////делаем обозначение бомбы в виде текста
-            //button.BackColor = Color.Red;
-            //button.ForeColor = Color.White;
-            //button.Text = "A";
-
-            //делаем обозначение бомбы в виде иконки 
-            button.BackgroundImage = Image.FromFile(@"C:\Users\User\source\repos\Saper\Saper\Resources\picture_bomb.jpg", false);
-            button.BackgroundImageLayout = ImageLayout.Zoom;
-        }
-        else if (button.Param == "0")
-        {
-            button.BackColor = Color.Gray;
-        }
-        else if (button.Param == "1")
-        {
-            button.ForeColor = Color.Blue;
-            button.Text = button.Param;
-        }
-        else if (button.Param == "2")
-        {
-            button.ForeColor = Color.Green;
-            button.Text = button.Param;
-        }
-        else if (button.Param == "3")
-        {
-            button.ForeColor = Color.DarkOrange;
-            button.Text = button.Param;
-        }
-        else
-        {
-            button.ForeColor = Color.Red;
-            button.Text = button.Param;
-        }
-    }
-
-    //открывает всю таблицу
-    private void OpenTableButton()
-    {
-        for (int i = 0; i < buttonInHeigth; i++)
-        {
-            for (int j = 0; j < buttonInWidth; j++)
+            //рисуем закрытую кнопку
+            if (buttonStatus[x, y] == 0)
             {
-                OpenButton(allButtons[j, i]);
-
+                g.FillRectangle(Brushes.Gray, x * buttonWH, y * buttonWH + menuHeight, buttonWH, buttonWH);
+                g.DrawRectangle(Pens.White, x * buttonWH, y * buttonWH + menuHeight, buttonWH, buttonWH);
+            }
+            //рисуем открытую непустую кнопку и ее значение
+            else if (buttonStatus[x, y] == 1 && buttonValue[x, y] != "bomb" && buttonValue[x, y] != "0")
+            {
+                g.FillRectangle(Brushes.White, x * buttonWH, y * buttonWH + menuHeight, buttonWH, buttonWH);
+                g.DrawRectangle(Pens.Gray, x * buttonWH, y * buttonWH + menuHeight, buttonWH, buttonWH);
+                if (buttonValue[x, y] == "1")
+                {
+                    g.DrawString(buttonValue[x, y], new Font("Arial", (int)(buttonWH * 0.3), FontStyle.Bold), Brushes.Blue, new Point(x * buttonWH + (int)(buttonWH * 0.3), y * buttonWH + menuHeight + (int)(buttonWH * 0.3)));
+                }
+                else if (buttonValue[x, y] == "2")
+                {
+                    g.DrawString(buttonValue[x, y], new Font("Arial", (int)(buttonWH * 0.3), FontStyle.Bold), Brushes.Green, new Point(x * buttonWH + (int)(buttonWH * 0.3), y * buttonWH + menuHeight + (int)(buttonWH * 0.3)));
+                }
+                else if (buttonValue[x, y] == "3")
+                {
+                    g.DrawString(buttonValue[x, y], new Font("Arial", (int)(buttonWH * 0.3), FontStyle.Bold), Brushes.DarkOrange, new Point(x * buttonWH + (int)(buttonWH * 0.3), y * buttonWH + menuHeight + (int)(buttonWH * 0.3)));
+                }
+                else 
+                {
+                    g.DrawString(buttonValue[x, y], new Font("Arial", (int)(buttonWH * 0.3), FontStyle.Bold), Brushes.Red, new Point(x * buttonWH + (int)(buttonWH * 0.3), y * buttonWH + menuHeight + (int)(buttonWH * 0.3)));
+                }
+            }
+            //рисуем открытую пустую кнопку 
+            else if (buttonStatus[x, y] == 1 && buttonValue[x, y] == "0")
+            {
+                g.FillRectangle(Brushes.LightGray, x * buttonWH, y * buttonWH + menuHeight, buttonWH, buttonWH);
+            }
+            //рисуем бомбу
+            else if (buttonStatus[x, y] == 1 && buttonValue[x, y] == "bomb")
+            {
+                g.FillRectangle(Brushes.Red, 
+                    x * buttonWH, 
+                    y * buttonWH + menuHeight, 
+                    buttonWH, 
+                    buttonWH);
+                g.FillEllipse(Brushes.Black,
+                    x * buttonWH + (int)(buttonWH * 0.2),
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.2),
+                    (int)(buttonWH * 0.6),
+                    (int)(buttonWH * 0.6));
+                g.DrawLine(Pens.Black,
+                    x * buttonWH + (int)(buttonWH * 0.5), 
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.1), 
+                    x * buttonWH + (int)(buttonWH * 0.5), 
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.9));
+                g.DrawLine(Pens.Black,
+                    x * buttonWH + (int)(buttonWH * 0.1),
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.5),
+                    x * buttonWH + (int)(buttonWH * 0.9),
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.5));
+                g.DrawLine(Pens.Black,
+                    x * buttonWH + (int)(buttonWH * 0.15),
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.15),
+                    x * buttonWH + (int)(buttonWH * 0.85),
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.85));
+                g.DrawLine(Pens.Black,
+                    x * buttonWH + (int)(buttonWH * 0.85),
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.15),
+                    x * buttonWH + (int)(buttonWH * 0.15),
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.85));
+            }
+            //рисуем флаг
+            else if (buttonStatus[x, y] == 2)
+            {
+                g.FillRectangle(Brushes.Yellow, x * buttonWH, y * buttonWH + menuHeight, buttonWH, buttonWH);
+                g.FillPolygon(Brushes.Red, new Point[] {
+                    new Point(x * buttonWH + (int)(buttonWH * 0.2), y * buttonWH + menuHeight + (int)(buttonWH * 0.1)),
+                    new Point(x * buttonWH + (int)(buttonWH * 0.8), y * buttonWH + menuHeight + (int)(buttonWH * 0.3)), 
+                    new Point(x * buttonWH + (int)(buttonWH * 0.2), y * buttonWH + menuHeight + (int)(buttonWH * 0.5))});
+                g.DrawLine(Pens.Black, 
+                    x * buttonWH + (int)(buttonWH * 0.2), 
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.5), 
+                    x * buttonWH + (int)(buttonWH * 0.2), 
+                    y * buttonWH + menuHeight + (int)(buttonWH * 0.9));
             }
         }
-    }
 
-    //проверка победы (открытие всех кнопок)
-    private bool WinInGame()
-    {
-        for (int i = 0; i < buttonInHeigth; i++)
+        //создание поля кнопок для игры
+        private void CreateTable()
         {
-            for (int j = 0; j < buttonInWidth; j++)
+            for (int i = 1; i < countY + 1; i++)
             {
-                if (allButtons[j, i].Text == "" && allButtons[j, i].Param != "bomb" && allButtons[j, i].Param != "0")
+                for (int j = 1; j < countX + 1; j++)
                 {
-                    return false;
+                    CreateButton(j, i);
                 }
             }
         }
-        return true;
-    }
-        
-    //открытие смежных ячеек
-    private void OpenNearButton(int j, int i)
-    {
-        if (j - 1 >= 0 && j + 1 < buttonInWidth &&
-            i - 1 >= 0 && i + 1 < buttonInHeigth)
-        {
-            OpenButton(allButtons[j - 1, i]);
-            OpenButton(allButtons[j + 1, i]);
-            OpenButton(allButtons[j - 1, i - 1]);
-            OpenButton(allButtons[j + 1, i - 1]);
-            OpenButton(allButtons[j, i - 1]);
-            OpenButton(allButtons[j - 1, i + 1]);
-            OpenButton(allButtons[j + 1, i + 1]);
-            OpenButton(allButtons[j, i + 1]);
 
-        }
-        else if (j - 1 >= 0 && j + 1 < buttonInWidth &&
-                i == 0)
+        //расстановка бомб И запись в массив 
+        private void CreateBomb()
         {
-            OpenButton(allButtons[j - 1, i]);
-            OpenButton(allButtons[j + 1, i]);
-            OpenButton(allButtons[j - 1, i + 1]);
-            OpenButton(allButtons[j + 1, i + 1]);
-            OpenButton(allButtons[j, i + 1]);
-        }
-        else if (j - 1 >= 0 && j + 1 < buttonInWidth &&
-                i == buttonInHeigth - 1)
-        {
-
-            OpenButton(allButtons[j - 1, i]);
-            OpenButton(allButtons[j + 1, i]);
-            OpenButton(allButtons[j - 1, i - 1]);
-            OpenButton(allButtons[j + 1, i - 1]);
-            OpenButton(allButtons[j, i - 1]);
-
-        }
-        else if (j == 0 && i - 1 >= 0 && i + 1 < buttonInHeigth)
-        {
-            OpenButton(allButtons[j + 1, i]);
-            OpenButton(allButtons[j + 1, i - 1]);
-            OpenButton(allButtons[j, i - 1]);
-            OpenButton(allButtons[j + 1, i + 1]);
-            OpenButton(allButtons[j, i + 1]);
-        }
-        else if (j == buttonInWidth - 1 && i - 1 >= 0 && i + 1 < buttonInHeigth)
-        {
-            OpenButton(allButtons[j - 1, i]);
-            OpenButton(allButtons[j - 1, i - 1]);
-            OpenButton(allButtons[j, i - 1]);
-            OpenButton(allButtons[j - 1, i + 1]);
-            OpenButton(allButtons[j, i + 1]);
-        }
-        else if (j == 0 && i == 0)
-        {
-            OpenButton(allButtons[j + 1, i]);
-            OpenButton(allButtons[j + 1, i + 1]);
-            OpenButton(allButtons[j, i + 1]);
-        }
-        else if (j == 0 && i == buttonInHeigth - 1)
-        {
-            OpenButton(allButtons[j + 1, i]);
-            OpenButton(allButtons[j + 1, i - 1]);
-            OpenButton(allButtons[j, i - 1]);
-        }
-        else if (j == buttonInWidth - 1 && i == 0)
-        {
-            OpenButton(allButtons[j - 1, i]);
-            OpenButton(allButtons[j - 1, i + 1]);
-            OpenButton(allButtons[j, i + 1]);
-        }
-        else if (j == buttonInWidth - 1 && i == buttonInHeigth - 1)
-        {
-            OpenButton(allButtons[j - 1, i]);
-            OpenButton(allButtons[j - 1, i - 1]);
-            OpenButton(allButtons[j, i - 1]);
-        }
-    }
-
-    //открывает пустые области (пока не оптимально)
-    private void GetNullArea(NewButton button)
-    {
-        int x = 0;//координаты кнопки по оси Х
-        int y = 0;//координаты кнопки по оси У
-
-        //определение координат кнопки по осям Х и У
-        for (int i = 0; i < buttonInHeigth; i++)
-        {
-            for (int j = 0; j < buttonInWidth; j++)
+            Random bombRandom = new Random();
+            for (int i = 0; i < countBomb; i++)
             {
-                if (allButtons[j, i].Name == button.Name)
+                //чтобы рандом не попадал в ту же ячейку
+                while (true) 
                 {
-                    x = j;
-                    y = i;
+                    int x = bombRandom.Next(1, countX + 1);
+                    int y = bombRandom.Next(1, countY + 1);
+                    if (buttonValue[x, y] != "bomb")
+                    {
+                        buttonValue[x, y] = "bomb";
+                        break;
+                    }
                 }
             }
         }
+
+        //рассчет значений кнопок, находящихся рядом с бомбой (количество бомб вокруг)
+        //запись в массив
+        private void CountAroundBomb()
+        {
+            for (int i = 1; i < countY + 1; i++)
+            {
+                for (int j = 1; j < countX + 1; j++)
+                {
+                    int countBomb = 0;
+                    if (buttonValue[j, i] != "bomb")
+                    {
+                        if (buttonValue[j - 1, i - 1] == "bomb") countBomb++;
+                        if (buttonValue[j, i - 1] == "bomb") countBomb++;
+                        if (buttonValue[j + 1, i - 1] == "bomb") countBomb++;
+                        if (buttonValue[j - 1, i + 1] == "bomb") countBomb++;
+                        if (buttonValue[j, i + 1] == "bomb") countBomb++;
+                        if (buttonValue[j + 1, i + 1] == "bomb") countBomb++;
+                        if (buttonValue[j - 1, i] == "bomb") countBomb++;
+                        if (buttonValue[j + 1, i] == "bomb") countBomb++;
+                        buttonValue[j, i] = countBomb.ToString();
+                    }
+                }
+            }
+        }
+
+        //клик на кнопку
+        private void Mouse_Click(object sender, MouseEventArgs e)
+        {
+            //по координатам клика получаем координаты кнопки
+            int x = e.X / buttonWH;
+            int y = (e.Y - menuHeight) / buttonWH;
+            //проверяем, чтобы клик был в игровое поле
+            if (x >= 1 && x <= countX && y >= 1 && y <= countY)
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    if (buttonStatus[x, y] == 0)
+                    {
+                        buttonStatus[x, y] = 1;
+                        CreateButton(x, y);
+                        //попал в бомбу - проиграл
+                        if (buttonValue[x, y] == "bomb")
+                        {
+                            OpenTableButton();
+                            Message("lose-bomb");
+                            Application.Restart();
+                        }
+                        //попал в пустую область - открытие области
+                        else if (buttonValue[x, y] == "0")
+                        {
+                            GetNullArea(x, y);
+                        }
+                    }
+                }
+                //установка флага в кнопку правой кнопкой мыши
+                else if (e.Button == MouseButtons.Right)
+                {
+                    if (buttonStatus[x, y] == 0)
+                    {
+                        buttonStatus[x, y] = 2;
+                    }
+                    //повторное нажатие снимает флаг
+                    else if (buttonStatus[x, y] == 2)
+                    {
+                        buttonStatus[x, y] = 0;
+                    }
+                    CreateButton(x, y);
+                }
+                //проверка условия победы и остановка игры
+                if (WinInGame())
+                {
+                    timer1.Stop(); 
+                    Message("win");
+                    Application.Restart();
+                }
+            }
+
+        }
+
+        //открывает всю таблицу (все кнопки)
+        private void OpenTableButton()
+        {
+            for (int i = 1; i < countY + 1; i++)
+            {
+                for (int j = 1; j < countX + 1; j++)
+                {
+                    buttonStatus[j, i] = 1;
+                    CreateButton(j, i);
+                }
+            }
+        }
+
+        //проверка победы (открыты все ли нужные кнопки или нет)
+        private bool WinInGame()
+        {
+            for (int i = 1; i < countY + 1; i++)
+            {
+                for (int j = 1; j < countX + 1; j++)
+                {
+                    if((buttonStatus[j, i] == 0 && buttonValue[j, i] != "bomb") || (buttonStatus[j, i] == 2 && buttonValue[j, i] != "bomb") || (buttonStatus[j, i] == 1 && buttonValue[j, i] == "bomb"))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        //открытие смежных непустых кнопок, располагающимися рядос с пустыми кнопками
+        private void OpenNearButton(int x, int y)
+        {
+            if (buttonValue[x - 1, y] != "0" && buttonValue[x - 1, y] != null)
+            {
+                buttonStatus[x - 1, y] = 1;
+                CreateButton(x - 1, y);
+            }
+            if (buttonValue[x + 1, y] != "0" && buttonValue[x + 1, y] != null)
+            {
+                buttonStatus[x + 1, y] = 1;
+                CreateButton(x + 1, y);
+            }
+            if (buttonValue[x - 1, y - 1] != "0" && buttonValue[x - 1, y - 1] != null)
+            {
+                buttonStatus[x - 1, y - 1] = 1;
+                CreateButton(x - 1, y - 1);
+            }
+            if (buttonValue[x + 1, y - 1] != "0" && buttonValue[x + 1, y - 1] != null)
+            {
+                buttonStatus[x + 1, y - 1] = 1;
+                CreateButton(x + 1, y - 1);
+            }
+            if (buttonValue[x, y - 1] != "0" && buttonValue[x, y - 1] != null)
+            {
+                buttonStatus[x, y - 1] = 1;
+                CreateButton(x, y - 1);
+            }
+            if (buttonValue[x - 1, y + 1] != "0" && buttonValue[x - 1, y + 1] != null)
+            {
+                buttonStatus[x - 1, y + 1] = 1;
+                CreateButton(x - 1, y + 1);
+            }
+            if (buttonValue[x + 1, y + 1] != "0" && buttonValue[x + 1, y + 1] != null)
+            {
+                buttonStatus[x + 1, y + 1] = 1;
+                CreateButton(x + 1, y + 1);
+            }
+            if (buttonValue[x, y + 1] != "0" && buttonValue[x, y + 1] != null)
+            {
+                buttonStatus[x, y + 1] = 1;
+                CreateButton(x, y + 1);
+            }
+        }
+
+        //открывает пустые области
+        //проверяет значение и статус соседней кнопки 
+        //открывает кнопку, соседние непустые кнопки
+        //запускает рекурсию
+        private void GetNullArea(int x, int y)
+        {
             
-        //поиск прилегающих пустых ячеек
-        for (int i = y; i < buttonInHeigth; i++)
-        {
-            for (int j = x; j < buttonInWidth; j++)
+            if (buttonValue[x - 1, y - 1] == "0" && buttonStatus[x - 1, y - 1] == 0)
             {
-                if (allButtons[j, i].Param == "0")
-                {
-                    OpenButton(allButtons[j, i]);
-                    OpenNearButton(j, i);
-                }
-                else
-                {
-                    break;
-                }
+                buttonStatus[x - 1, y - 1] = 1;
+                CreateButton(x - 1, y - 1);
+                GetNullArea(x - 1, y - 1);
+                OpenNearButton(x - 1, y - 1);
             }
-            for (int j = x; j >= 0; j--)
+            if (buttonValue[x, y - 1] == "0" && buttonStatus[x, y - 1] == 0)
             {
-                if (allButtons[j, i].Param == "0")
-                {
-                    OpenButton(allButtons[j, i]);
-                    OpenNearButton(j, i);
-                }
-                else
-                {
-                    break;
-                }
+                buttonStatus[x, y - 1] = 1;
+                CreateButton(x, y - 1);
+                GetNullArea(x, y - 1);
+                OpenNearButton(x, y - 1);
             }
-            if (i < buttonInHeigth - 1)
+            if (buttonValue[x + 1, y - 1] == "0" && buttonStatus[x + 1, y - 1] == 0)
             {
-                if (allButtons[x, i + 1].Param != "0") break;
+                buttonStatus[x + 1, y - 1] = 1;
+                CreateButton(x + 1, y - 1);
+                GetNullArea(x + 1, y - 1);
+                OpenNearButton(x + 1, y - 1);
             }
-                
-        }
-        for (int i = y; i >= 0; i--)
-        {
-            for (int j = x; j < buttonInWidth; j++)
+            if (buttonValue[x - 1, y + 1] == "0" && buttonStatus[x - 1, y + 1] == 0)
             {
-                if (allButtons[j, i].Param == "0")
-                {
-                    OpenButton(allButtons[j, i]);
-                    OpenNearButton(j, i);
-                }
-                else
-                {
-                    break;
-                }
+                buttonStatus[x - 1, y + 1] = 1;
+                CreateButton(x - 1, y + 1);
+                GetNullArea(x - 1, y + 1);
+                OpenNearButton(x - 1, y + 1);
             }
-            for (int j = x; j >= 0; j--)
+            if (buttonValue[x, y + 1] == "0" && buttonStatus[x, y + 1] == 0)
             {
-                if (allButtons[j, i].Param == "0")
-                {
-                    OpenButton(allButtons[j, i]);
-                    OpenNearButton(j, i);
-                }
-                else
-                {
-                    break;
-                }
+                buttonStatus[x, y + 1] = 1;
+                CreateButton(x, y + 1);
+                GetNullArea(x, y + 1);
+                OpenNearButton(x, y + 1);
             }
-            if (i > 0) 
+            if (buttonValue[x + 1, y + 1] == "0" && buttonStatus[x + 1, y + 1] == 0)
             {
-                if (allButtons[x, i - 1].Param != "0") break;
-            } 
-        }
-        if (WinInGame())
-        {
-            Message("win");
-        }
-    }
-
-    //таймер
-    private void timer1_Tick(object sender, EventArgs e)
-    {
-        int time = (int)timerOfGame.Value;
-        if (time > 0)
-        {
-            time--;
-            timerOfGame.Value = time;
-        }
-        else
-        {
-            timer1.Stop();
-            OpenTableButton();
-            Message("lose_on_timeout");
+                buttonStatus[x + 1, y + 1] = 1;
+                CreateButton(x + 1, y + 1);
+                GetNullArea(x + 1, y + 1);
+                OpenNearButton(x + 1, y + 1);
+            }
+            if (buttonValue[x - 1, y] == "0" && buttonStatus[x - 1, y] == 0)
+            {
+                buttonStatus[x - 1, y] = 1;
+                CreateButton(x - 1, y);
+                GetNullArea(x - 1, y);
+                OpenNearButton(x - 1, y);
+            }
+            if (buttonValue[x + 1, y] == "0" && buttonStatus[x + 1, y] == 0)
+            {
+                buttonStatus[x + 1, y] = 1;
+                CreateButton(x + 1, y);
+                GetNullArea(x + 1, y);
+                OpenNearButton(x + 1, y);
+            }
+            OpenNearButton(x, y);
         }
 
-    }
+        //таймер
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            int time = (int)timerOfGame.Value;
+            if (time > 0)
+            {
+                time--;
+                timerOfGame.Value = time;
+            }
+            else
+            {
+                timer1.Stop();
+                OpenTableButton();
+                Message("lose-timeout");
+                Application.Restart();
+            }
+        }
 
-    //блок с выводимыми сообщениями
-    private void Message(string message)
-    {
-        //сообщение о победе
-        if (message == "win")
+        //блок с выводимыми сообщениями
+        public void Message(string message)
         {
-            MessageBox.Show("Поздравляем с победой", "Вы выграли!");
+            //сообщение о победе
+            if (message == "win")
+            {
+                MessageBox.Show("Поздравляем с победой", "Вы выграли!");
+            }
+            //сообщение о проигрыше (попадение в бомбу)
+            else if (message == "lose-bomb")
+            {
+                MessageBox.Show("Вы попали в бомбу", "Вы проиграли!");
+            }
+            //сообщение о проигрыше (истечение времени)
+            else if (message == "lose-timeout")
+            {
+                MessageBox.Show("Время вышло", "Вы проиграли!");
+            }
+            //сообщение об ошибке (неверное количество бомб)
+            else if (message == "mistake-limitofbomb")
+            {
+                MessageBox.Show("Количество бомб не может быть больше, чем количество клеток", "Ошибка!");
+            }
         }
-        //сообщение о проигрыше (попадение в бомбу)
-        else if (message == "lose_on_bomb")
-        {
-            MessageBox.Show("Вы попали в бомбу", "Вы проиграли!");
-        }
-        //сообщение о проигрыше (истечение времени)
-        else if (message == "lose_on_timeout")
-        {
-            MessageBox.Show("Время вышло", "Вы проиграли!");
-        }
-        //сообщение об ошибке (неверное количество бомб)
-        else if (message == "mistake_limitofbomb")
-        {
-            MessageBox.Show("Количество бомб не может быть больше, чем количество клеток", "Ошибка!");
-        }
-        Application.Restart();
-    }
-    
-    
     }
 }

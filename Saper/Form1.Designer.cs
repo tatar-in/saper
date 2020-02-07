@@ -54,7 +54,12 @@
             // 
             this.countButtonX.Location = new System.Drawing.Point(161, 8);
             this.countButtonX.Maximum = new decimal(new int[] {
-            50,
+            1000,
+            0,
+            0,
+            0});
+            this.countButtonX.Minimum = new decimal(new int[] {
+            1,
             0,
             0,
             0});
@@ -71,7 +76,12 @@
             // 
             this.countButtonY.Location = new System.Drawing.Point(161, 36);
             this.countButtonY.Maximum = new decimal(new int[] {
-            50,
+            1000,
+            0,
+            0,
+            0});
+            this.countButtonY.Minimum = new decimal(new int[] {
+            1,
             0,
             0,
             0});
@@ -87,6 +97,16 @@
             // countMine
             // 
             this.countMine.Location = new System.Drawing.Point(161, 64);
+            this.countMine.Maximum = new decimal(new int[] {
+            1000,
+            0,
+            0,
+            0});
+            this.countMine.Minimum = new decimal(new int[] {
+            1,
+            0,
+            0,
+            0});
             this.countMine.Name = "countMine";
             this.countMine.Size = new System.Drawing.Size(68, 22);
             this.countMine.TabIndex = 3;
@@ -148,7 +168,7 @@
             this.timerOfGame.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.timerOfGame.Location = new System.Drawing.Point(373, 32);
             this.timerOfGame.Maximum = new decimal(new int[] {
-            300,
+            600,
             0,
             0,
             0});
@@ -164,6 +184,7 @@
             // 
             // Form1
             // 
+            this.AutoScroll = true;
             this.ClientSize = new System.Drawing.Size(500, 100);
             this.Controls.Add(this.timerOfGame);
             this.Controls.Add(this.label4);
@@ -176,6 +197,7 @@
             this.Controls.Add(this.countButtonX);
             this.Name = "Form1";
             this.Text = "Сапер";
+            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.Mouse_Click);
             ((System.ComponentModel.ISupportInitialize)(this.countButtonX)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.countButtonY)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.countMine)).EndInit();
