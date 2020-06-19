@@ -30,8 +30,18 @@ namespace Saper
             Controls.Add(menu);
 
             Load += new EventHandler(Form_Load);
-            MouseClick += new MouseEventHandler(Mouse_Click);
+
+            //добавляем поле игры
+            gameBox = new PictureBox();
+            gameBox.Size = new Size(Game.CountX * Game.ButtonWidthHeight, Game.CountY * Game.ButtonWidthHeight);
+            gameBox.Location = Game.StartPointGame;
+            gameBox.Paint += new PaintEventHandler(GameBox_Paint);
+            gameBox.MouseClick += new MouseEventHandler(Mouse_Click);
+            Controls.Add(gameBox);
         }
+
+        //создаем поле игры
+        public PictureBox gameBox;
 
         //старт игры
         private void Form_Load(object sender, EventArgs e)
@@ -40,9 +50,8 @@ namespace Saper
         }
 
         //перерисовка
-        protected override void OnPaint(PaintEventArgs e)
+        private void GameBox_Paint(object sender, PaintEventArgs e)
         {
-            base.OnPaint(e);
             //рисуем поле игры
             View.DrawGame(e.Graphics);
             //рисуем вид кнопок
@@ -59,7 +68,7 @@ namespace Saper
                     else if (Data.ButtonStatus[x, y] == 1 && Data.ButtonValue[x, y] == "0")
                     {
                         View.NullButton(e.Graphics, x, y);
-                    }   
+                    }
                     //рисуем бомбу
                     else if (Data.ButtonStatus[x, y] == 1 && Data.ButtonValue[x, y] == "bomb")
                     {
@@ -78,13 +87,13 @@ namespace Saper
         private void Mouse_Click(object sender, MouseEventArgs e)
         {
             //по координатам клика (с коррекцией на начальную точку игры) получаем положение кнопки в массиве
-            int x = (e.X - Game.StartPointGame.X) / Game.ButtonWidthHeight;
-            int y = (e.Y - Game.StartPointGame.Y) / Game.ButtonWidthHeight;
+            int x = e.X / Game.ButtonWidthHeight;
+            int y = e.Y / Game.ButtonWidthHeight;
 
             //прямоугольник для последующего обновления области кнопки
-            Rectangle rect_button = new Rectangle(Game.StartPointGame.X + x * Game.ButtonWidthHeight, Game.StartPointGame.Y + y * Game.ButtonWidthHeight, Game.ButtonWidthHeight, Game.ButtonWidthHeight);
+            Rectangle rect_button = new Rectangle(x * Game.ButtonWidthHeight, y * Game.ButtonWidthHeight, Game.ButtonWidthHeight, Game.ButtonWidthHeight);
             //прямоугольник для последующего обновления всей области игры
-            Rectangle rect_game = new Rectangle(Game.StartPointGame.X, Game.StartPointGame.Y, Game.StartPointGame.X + Game.CountX * Game.ButtonWidthHeight, Game.StartPointGame.Y + Game.CountY * Game.ButtonWidthHeight);
+            Rectangle rect_game = new Rectangle(0, 0, Game.CountX * Game.ButtonWidthHeight, Game.CountY * Game.ButtonWidthHeight);
             
             //если клик в игровое поле
             if (x < Game.CountX && y < Game.CountY)
@@ -100,7 +109,7 @@ namespace Saper
                         if (Data.ButtonValue[x, y] == "bomb")
                         {
                             Logic.OpenTableButton();
-                            Invalidate(rect_game);
+                            gameBox.Invalidate(rect_game);
                             DialogResult result = MessageBox.Show("Вы попали в бомбу\n\nСыграть еще?", "Вы проиграли!", MessageBoxButtons.YesNo);
                             if (result == DialogResult.Yes)
                             {
@@ -115,12 +124,12 @@ namespace Saper
                         else if (Data.ButtonValue[x, y] == "0")
                         {
                             Logic.GetNullArea(x, y);
-                            Invalidate(rect_game);
+                            gameBox.Invalidate(rect_game);
                         }
                         //открытие кнопки
                         else
                         {
-                            Invalidate(rect_button);
+                            gameBox.Invalidate(rect_button);
                         }
                     }
                 }
@@ -131,13 +140,13 @@ namespace Saper
                     if (Data.ButtonStatus[x, y] == 0)
                     {
                         Data.ButtonStatus[x, y] = 2;
-                        Invalidate(rect_button);
+                        gameBox.Invalidate(rect_button);
                     }
                     //снятие флага (повторное нажатие)
                     else if (Data.ButtonStatus[x, y] == 2)
                     {
                         Data.ButtonStatus[x, y] = 0;
-                        Invalidate(rect_button);
+                        gameBox.Invalidate(rect_button);
                     }
                 }
                 //проверка условия победы, остановка игры и вывод сообщения
@@ -170,7 +179,8 @@ namespace Saper
             if (e.CloseReason == CloseReason.UserClosing)
             {
                 Logic.StartGame();
-                Invalidate();
+                gameBox.Size = new Size(Game.CountX * Game.ButtonWidthHeight, Game.CountY * Game.ButtonWidthHeight);
+                gameBox.Invalidate();
             }
         }
 
